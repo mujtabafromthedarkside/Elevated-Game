@@ -61,9 +61,9 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   double center_x = 0;
   double center_y = 0;
-  double velocity = -2;
-  double changeInVelocity = 2;
-  double gravity = 1;
+  double velocity = 0;
+  double tapVelocity = -5;
+  double gravity = 0.1;
   late double screenWidth;
   late double screenHeight;
   bool gameStart = true;
@@ -78,10 +78,18 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
     // );
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 1),
+      duration: const Duration(days: 1),
     );
     
     _animationController.addListener(updatePosition);
+    _animationController.addListener(
+      () {
+        // JUST FOR TESTING ONCE GAME IS COMPLETED, TURN + TO -
+        if ((center_y + widget.size / 2) > screenHeight) {
+          _animationController.stop();
+        }
+      },
+    );
     // _animationController.forward();
   }
 
@@ -100,25 +108,26 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
   }
 
   void updatePosition() {
-    print('updating position');
-    if (velocity <= 0){
+    // print('updating position');
+    // if (velocity <= 0){
       setState((){
         center_y += velocity;
+        velocity += gravity;
         if(center_y < 0){
           center_y = screenHeight;
         }
-        print("updating position to $center_y");
+        // print("updating position to $center_y");
       // velocity += gravity;
       });
-    }
+    // }
   }
 
-  void TapFun() {
+  void tapFun() {
     print("Tapped");
     // if (!_animationController.isAnimating) {
       setState(() {
         // Move the square up by a certain amount
-        velocity = -2.0;
+        velocity = tapVelocity;
       });
       startAnimation();
     // }
@@ -149,7 +158,7 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
       offset: Offset(center_x, center_y),
       child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: TapFun,
+          onTap: tapFun,
           child: AnimatedBuilder(
             animation: _animationController,
             builder: (context, child) {
