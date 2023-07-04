@@ -89,6 +89,9 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
   double velocityY = 0;
   double gravity = 0.25;
 
+  double rotationAngle = 0.0;
+  double rateOfRotation = 0.05;
+
   late double screenWidth;
   late double screenHeight;
   bool gameStart = true;
@@ -142,6 +145,8 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
     // print('updating position');
     // if (velocity <= 0){
       setState((){
+        rotationAngle += rateOfRotation;
+
         velocityX = _x/_xMax * maxVelocityX;
         centerX += velocityX;
         centerX = min(screenWidth - widget.size, centerX);
@@ -193,20 +198,23 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
     }
 
     return Transform.translate(
-      offset: Offset(centerX, centerY),
-      child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: tapFun,
-          child: AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return Container(
-                    width: widget.size,
-                    height: widget.size,
-                    color: Colors.red,
-                  );
-            },
-          ),
+        offset: Offset(centerX, centerY),
+        child: Transform.rotate(
+          angle: rotationAngle,
+          child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: tapFun,
+              child: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  return Container(
+                        width: widget.size,
+                        height: widget.size,
+                        color: Colors.red,
+                      );
+                },
+              ),
+            ),
         ),
     );
   }
