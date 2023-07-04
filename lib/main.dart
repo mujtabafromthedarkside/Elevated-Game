@@ -67,16 +67,15 @@ class HomePage extends StatelessWidget {
 }
 
 class Square extends StatefulWidget {
-  final double size;
-
-  Square({required this.size});
+  const Square({super.key});
 
   @override
   _SquareState createState() => _SquareState();
 }
 
 class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+  double squareSize = 50;
+
   double _x = 0.0;                        //accelerometer x value
   double _xMax = 0.6;                     //this value results in maxVelocityX
   double velocityX = 0;
@@ -95,6 +94,7 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
   late double screenWidth;
   late double screenHeight;
   bool gameStart = true;
+  late AnimationController _animationController;
   StreamSubscription<AccelerometerEvent>? _subscription;
 
 
@@ -111,7 +111,7 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
     _animationController.addListener(
       () {
         // JUST FOR TESTING ONCE GAME IS COMPLETED, TURN + TO -
-        if ((centerY + widget.size / 2) > screenHeight) {
+        if ((centerY + squareSize / 2) > screenHeight) {
           _animationController.stop();
         }
       },
@@ -149,7 +149,7 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
 
         velocityX = _x/_xMax * maxVelocityX;
         centerX += velocityX;
-        centerX = min(screenWidth - widget.size, centerX);
+        centerX = min(screenWidth - squareSize, centerX);
         centerX = max(0, centerX);
 
         centerY += velocityY;
@@ -188,8 +188,8 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
       screenHeight -= padding.top;
 
       //square center
-      centerY = screenHeight/2;//- widget.size;
-      centerX = (screenWidth - widget.size)/2;
+      centerY = screenHeight/2;//- squareSize;
+      centerX = (screenWidth - squareSize)/2;
       print("x: $centerX, y: $centerY");
 
       // print(centerY);
@@ -208,9 +208,13 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
                 animation: _animationController,
                 builder: (context, child) {
                   return Container(
-                        width: widget.size,
-                        height: widget.size,
-                        color: Colors.red,
+                        width: squareSize,
+                        height: squareSize,
+                        // color: Colors.red,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.red,
+                        ),
                       );
                 },
               ),
@@ -228,8 +232,6 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
-  double squareSize = 50;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -237,7 +239,7 @@ class _GamePageState extends State<GamePage> {
       //   toolbarHeight: 100,
       //   title: const Text("Elevated Game"),
       // ),
-      body: Square(size: squareSize),
+      body: Square(),
     );
   }
 }
