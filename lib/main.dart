@@ -70,7 +70,7 @@ class Square extends StatefulWidget {
   const Square({super.key});
 
   @override
-  _SquareState createState() => _SquareState();
+  State<Square> createState() => _SquareState();
 }
 
 class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
@@ -91,8 +91,8 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
   double rotationAngle = 0.0;
   double rateOfRotation = 0.05;
 
-  late double screenWidth;
-  late double screenHeight;
+  static late double screenWidth;
+  static late double screenHeight;
   bool gameStart = true;
   late AnimationController _animationController;
   StreamSubscription<AccelerometerEvent>? _subscription;
@@ -210,16 +210,111 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
                   return Container(
                         width: squareSize,
                         height: squareSize,
-                        // color: Colors.red,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.red,
-                        ),
+                        color: Colors.red,
+                        // decoration: const BoxDecoration(
+                        //   shape: BoxShape.circle,
+                        //   color: Colors.red,
+                        // ),
                       );
                 },
               ),
             ),
         ),
+    );
+  }
+}
+
+class Obstacle extends StatefulWidget {
+  final double velocity;
+  final double thickness;
+  final double squareSize;
+  const Obstacle({super.key, required this.velocity, required this.thickness, required this.squareSize});
+
+  @override
+  State<Obstacle> createState() => _ObstacleState();
+}
+
+class _ObstacleState extends State<Obstacle> with SingleTickerProviderStateMixin{
+  late double position;
+  late double holeSize = 200;
+  late double holeTolerance = 30;
+  late double holePosition;
+  late AnimationController _animationController;
+
+  void updatePosition() {
+    setState((){
+      position += widget.velocity;
+    });
+  }
+
+  void initHole(){
+    assert (sqrt(2*widget.squareSize*widget.squareSize) + 30 < holeSize, ["Hole is too small for object"]);
+    Random randomGenerator = Random();
+    holePosition = randomGenerator.nextDouble() * (_SquareState.screenWidth - 2*holeTolerance) + holeTolerance;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // position = -(widget.thickness);
+    position = 0;
+    initHole();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(days: 1),
+    ); 
+    
+    _animationController.addListener(updatePosition);
+    _animationController.addListener(
+      () {
+        // JUST FOR TESTING ONCE GAME IS COMPLETED, TURN + TO -
+        // if (position > _SquareState.screenHeight) {
+        //   _animationController.stop();
+        // }
+        if (position > 500) {
+          _animationController.stop();
+        }
+      },
+    );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child){
+        return ListView(
+          children: [
+            Positioned(
+              top: position,
+              left: 0,
+              child: Container(
+                height: widget.thickness,
+                width: holePosition,
+                color: Colors.green,
+              ),
+            ),
+            Positioned(
+              top: position,
+              left: holePosition + holeSize,
+              child: Container(
+                height: widget.thickness,
+                width: _SquareState.screenWidth - holePosition - holeSize,
+                color: Colors.green,
+              ),
+            )
+          ]
+        );
+      }
     );
   }
 }
@@ -239,7 +334,13 @@ class _GamePageState extends State<GamePage> {
       //   toolbarHeight: 100,
       //   title: const Text("Elevated Game"),
       // ),
-      body: Square(),
+      body: Stack(
+        // physics: const NeverScrollableScrollPhysics(),
+        children: [
+          Square(),
+          // Obstacle(velocity: 5, thickness: 50, squareSize: 50),
+        ]
+      )
     );
   }
 }
