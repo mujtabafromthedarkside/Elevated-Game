@@ -66,8 +66,33 @@ class HomePage extends StatelessWidget {
   }
 }
 
+// class Square extends StatefulWidget {
+//   const Square({super.key});
+
+//   @override
+//   State<Square> createState() => _SquareState();
+// }
+
+// class _SquareState extends State<Square> {
+//   double squareSize = 50;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//             width: squareSize,
+//             height: squareSize,
+//             color: Colors.red,
+//             // decoration: const BoxDecoration(
+//             //   shape: BoxShape.circle,
+//             //   color: Colors.red,
+//             // ),
+//           );
+//   }
+// }
+
 class Square extends StatefulWidget {
-  const Square({super.key});
+  List<Obstacle> obstacles;
+  Square({super.key, required this.obstacles});
 
   @override
   State<Square> createState() => _SquareState();
@@ -90,6 +115,8 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
 
   double rotationAngle = 0.0;
   double rateOfRotation = 0.05;
+
+  // Obstacle obstacle = Obstacle(velocity: 5, thickness: 50, squareSize: 50);
 
   static late double screenWidth;
   static late double screenHeight;
@@ -145,6 +172,7 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
     // print('updating position');
     // if (velocity <= 0){
       setState((){
+        // obstacle.updatePosition();
         rotationAngle += rateOfRotation;
 
         velocityX = _x/_xMax * maxVelocityX;
@@ -198,16 +226,17 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
     }
 
     return Transform.translate(
-        offset: Offset(centerX, centerY),
-        child: Transform.rotate(
-          angle: rotationAngle,
-          child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: tapFun,
-              child: AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return Container(
+              offset: Offset(centerX, centerY),
+              child: Transform.rotate(
+                angle: rotationAngle,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: tapFun,
+                  child: AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      // return Square();
+                      return Container(
                         width: squareSize,
                         height: squareSize,
                         color: Colors.red,
@@ -216,11 +245,11 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
                         //   color: Colors.red,
                         // ),
                       );
-                },
+                    },
+                  ),
+                ),
               ),
-            ),
-        ),
-    );
+            );
   }
 }
 
@@ -236,9 +265,10 @@ class Obstacle extends StatefulWidget {
 
 class _ObstacleState extends State<Obstacle> with SingleTickerProviderStateMixin{
   late double position;
-  late double holeSize = 200;
-  late double holeTolerance = 30;
+  late double holeSize = 100;
+  late double holeTolerance = 30;     // distance from edge of screen, trying that hole isn't too close to edge
   late double holePosition;
+  late bool dead = false;
   late AnimationController _animationController;
 
   void updatePosition() {
@@ -248,9 +278,10 @@ class _ObstacleState extends State<Obstacle> with SingleTickerProviderStateMixin
   }
 
   void initHole(){
-    assert (sqrt(2*widget.squareSize*widget.squareSize) + 30 < holeSize, ["Hole is too small for object"]);
+    assert (sqrt(2*widget.squareSize*widget.squareSize) + 5 < holeSize, ["Hole is too small for object"]);
     Random randomGenerator = Random();
-    holePosition = randomGenerator.nextDouble() * (_SquareState.screenWidth - 2*holeTolerance) + holeTolerance;
+    holePosition = randomGenerator.nextDouble() * (_SquareState.screenWidth - 2*holeTolerance - holeSize) + holeTolerance;
+    // holePosition = 100;
   }
 
   @override
@@ -269,11 +300,10 @@ class _ObstacleState extends State<Obstacle> with SingleTickerProviderStateMixin
     _animationController.addListener(
       () {
         // JUST FOR TESTING ONCE GAME IS COMPLETED, TURN + TO -
-        // if (position > _SquareState.screenHeight) {
-        //   _animationController.stop();
-        // }
-        if (position > 500) {
+        if (position > _SquareState.screenHeight + 200) {
           _animationController.stop();
+          dead = true;
+          print('obstacle ended');
         }
       },
     );
@@ -292,27 +322,31 @@ class _ObstacleState extends State<Obstacle> with SingleTickerProviderStateMixin
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child){
-        return ListView(
-          children: [
-            Positioned(
-              top: position,
-              left: 0,
-              child: Container(
-                height: widget.thickness,
-                width: holePosition,
-                color: Colors.green,
+        return SizedBox(
+          width: double.infinity,
+          height: double.infinity,
+          child: Stack(
+            children: [
+              Positioned(
+                top: position,
+                left: 0,
+                child: Container(
+                  height: widget.thickness,
+                  width: holePosition,
+                  color: Colors.green,
+                ),
               ),
-            ),
-            Positioned(
-              top: position,
-              left: holePosition + holeSize,
-              child: Container(
-                height: widget.thickness,
-                width: _SquareState.screenWidth - holePosition - holeSize,
-                color: Colors.green,
-              ),
-            )
-          ]
+              Positioned(
+                top: position,
+                left: holePosition + holeSize,
+                child: Container(
+                  height: widget.thickness,
+                  width: _SquareState.screenWidth - holePosition - holeSize,
+                  color: Colors.green,
+                ),
+              )
+            ]
+          ),
         );
       }
     );
@@ -327,6 +361,24 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
+  List<Obstacle> obstacles = [];
+  Obstacle obs = Obstacle(velocity: 2, thickness: 20, squareSize: 50);
+
+  @override
+  void initState() {
+    super.initState();
+    // Start adding obstacles after 1 second
+    Timer.periodic(const Duration(seconds: 2), (Timer timer) {
+      setState(() {
+        obstacles.add(
+          Obstacle(velocity: 2, thickness: 20, squareSize: 50),
+        );
+      });
+
+      // print(obs.)
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -334,12 +386,16 @@ class _GamePageState extends State<GamePage> {
       //   toolbarHeight: 100,
       //   title: const Text("Elevated Game"),
       // ),
-      body: Stack(
-        // physics: const NeverScrollableScrollPhysics(),
-        children: [
-          Square(),
-          // Obstacle(velocity: 5, thickness: 50, squareSize: 50),
-        ]
+      body: SizedBox(
+        width: double.infinity,
+        height: double.infinity,
+        child: Stack(
+          // physics: const NeverScrollableScrollPhysics(),
+          children: [
+            Square(obstacles: obstacles),
+            ...obstacles,
+          ]
+        ),
       )
     );
   }
