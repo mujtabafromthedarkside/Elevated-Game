@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:math';
 import 'dart:async';
 
@@ -91,7 +92,7 @@ class HomePage extends StatelessWidget {
 // }
 
 class Square extends StatefulWidget {
-  List<Obstacle> obstacles;
+  Queue<Obstacle> obstacles;
   Square({super.key, required this.obstacles});
 
   @override
@@ -253,14 +254,21 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
   }
 }
 
+// typedef bool MyBoolCallback();
 class Obstacle extends StatefulWidget {
   final double velocity;
   final double thickness;
   final double squareSize;
-  const Obstacle({super.key, required this.velocity, required this.thickness, required this.squareSize});
+  // bool dead = false;
+  Obstacle({super.key, required this.velocity, required this.thickness, required this.squareSize});
 
   @override
   State<Obstacle> createState() => _ObstacleState();
+
+  // bool callGetter(bool Function() function){
+  //   return function();
+  // }
+  // bool getLifeStatus();
 }
 
 class _ObstacleState extends State<Obstacle> with SingleTickerProviderStateMixin{
@@ -268,8 +276,14 @@ class _ObstacleState extends State<Obstacle> with SingleTickerProviderStateMixin
   late double holeSize = 100;
   late double holeTolerance = 30;     // distance from edge of screen, trying that hole isn't too close to edge
   late double holePosition;
-  late bool dead = false;
+  // late bool dead = false;
   late AnimationController _animationController;
+
+  // final MyBoolCallback getLife;
+
+  // bool widget.getLifeStatus(){
+  //   return dead;
+  // }
 
   void updatePosition() {
     setState((){
@@ -302,7 +316,7 @@ class _ObstacleState extends State<Obstacle> with SingleTickerProviderStateMixin
         // JUST FOR TESTING ONCE GAME IS COMPLETED, TURN + TO -
         if (position > _SquareState.screenHeight + 200) {
           _animationController.stop();
-          dead = true;
+          // widget.dead = true;
           print('obstacle ended');
         }
       },
@@ -361,7 +375,7 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
-  List<Obstacle> obstacles = [];
+  Queue<Obstacle> obstacles = Queue<Obstacle>();
   Obstacle obs = Obstacle(velocity: 2, thickness: 20, squareSize: 50);
 
   @override
@@ -373,6 +387,10 @@ class _GamePageState extends State<GamePage> {
         obstacles.add(
           Obstacle(velocity: 2, thickness: 20, squareSize: 50),
         );
+
+        // if (obstacles.isNotEmpty && obstacles.first.dead){
+        //   obstacles.removeFirst();
+        // }
       });
 
       // print(obs.)
@@ -393,7 +411,7 @@ class _GamePageState extends State<GamePage> {
           // physics: const NeverScrollableScrollPhysics(),
           children: [
             Square(obstacles: obstacles),
-            ...obstacles,
+             ...obstacles.map((element) => element).toList(),
           ]
         ),
       )
