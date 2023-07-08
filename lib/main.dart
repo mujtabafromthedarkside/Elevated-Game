@@ -17,13 +17,13 @@ class MyApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Elevated Game',
-      home: _MyApp(),
+      home: MyApp2(),
     );
   }
 }
 
-class _MyApp extends StatelessWidget {
-  const _MyApp({super.key});
+class MyApp2 extends StatelessWidget {
+  const MyApp2({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,74 +42,42 @@ class HomePage extends StatelessWidget {
         // ),
         body: Center(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (BuildContext context) => const GamePage(),
-                        ),
-                      );
-                    },
-                    child: const Text("Play")),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (BuildContext context) => const TestAccelerometer(),
-                        ),
-                      );
-                    },
-                    child: const Text("Accelerometer")),
-              ],
-            )));
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) => const GamePage(),
+                ),
+              );
+            },
+            child: const Text("Play")),
+        ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) => const TestAccelerometer(),
+                ),
+              );
+            },
+            child: const Text("Accelerometer")),
+      ],
+    )));
   }
 }
 
-// class Square extends StatefulWidget {
-//   const Square({super.key});
-
-//   @override
-//   State<Square> createState() => _SquareState();
-// }
-
-// class _SquareState extends State<Square> {
-//   double squareSize = 50;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//             width: squareSize,
-//             height: squareSize,
-//             color: Colors.red,
-//             // decoration: const BoxDecoration(
-//             //   shape: BoxShape.circle,
-//             //   color: Colors.red,
-//             // ),
-//           );
-//   }
-// }
-
-class Square extends StatefulWidget {
-  Queue<Obstacle> obstacles;
-  Square({super.key, required this.obstacles});
-
-  @override
-  State<Square> createState() => _SquareState();
-}
-
-class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
+class Square {
   double squareSize = 50;
 
-  double _x = 0.0;                        //accelerometer x value
-  double _xMax = 0.6;                     //this value results in maxVelocityX
+  double _x = 0.0; //accelerometer x value
+  double _xMax = 0.6; //this value results in maxVelocityX
   double velocityX = 0;
   double maxVelocityX = -0.4;
 
-  double centerX = 0;                    //square center x coordinate
-  double centerY = 0;                    //square center y coordinate
-  
+  double centerX = 0; //square center x coordinate
+  double centerY = 0; //square center y coordinate
+
   double maxVelocity = -7;
   double velocityY = 0;
   double gravity = 0.25;
@@ -117,253 +85,99 @@ class _SquareState extends State<Square> with SingleTickerProviderStateMixin {
   double rotationAngle = 0.0;
   double rateOfRotation = 0.05;
 
-  // Obstacle obstacle = Obstacle(velocity: 5, thickness: 50, squareSize: 50);
-
-  static late double screenWidth;
-  static late double screenHeight;
+  static late double screenWidth = 400;
+  static late double screenHeight = 1000;
+  static late bool gameOver = false;
   bool gameStart = true;
-  late AnimationController _animationController;
-  StreamSubscription<AccelerometerEvent>? _subscription;
 
+  static late StreamSubscription<AccelerometerEvent> subscription;
 
-  @override
-  void initState() {
-    super.initState();
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(days: 1),
-    );
-    
-    _animationController.addListener(updatePosition);
-    _animationController.addListener(
-      () {
-        // JUST FOR TESTING ONCE GAME IS COMPLETED, TURN + TO -
-        if ((centerY + squareSize / 2) > screenHeight) {
-          _animationController.stop();
-        }
-      },
-    );
-
-    _subscription = accelerometerEvents.listen((AccelerometerEvent event) {
+  Square() {
+    subscription = accelerometerEvents.listen((AccelerometerEvent event) {
       // print(event);
-      setState(() {
-        _x = event.x;
-      });
+      _x = event.x;
     });
-    // _animationController.forward();
+
+    reset();
   }
 
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    _animationController.dispose();
-    super.dispose();
-  }
+  void reset(){
+    gameOver = false;
+    gameStart = true;
 
-  void startAnimation() {
-    if (!_animationController.isAnimating) {
-      print("start animating");
-      _animationController.reset();
-      _animationController.forward();
-    }
+    _x = 0.0; //accelerometer x value
+    velocityX = 0;
+
+    centerX = 0; //square center x coordinate
+    centerY = 0; //square center y coordinate
+
+    velocityY = 0;
+
+    rotationAngle = 0.0;
   }
 
   void updatePosition() {
-    // print('updating position');
-    // if (velocity <= 0){
-      setState((){
-        // obstacle.updatePosition();
-        rotationAngle += rateOfRotation;
+    if (centerY + sqrt(2*(squareSize*squareSize)) < 0 || centerY - sqrt(2*(squareSize*squareSize)) > screenHeight) {
+      print("Game over");
+      gameOver = true;
+      return;
+    }
 
-        velocityX = _x/_xMax * maxVelocityX;
-        centerX += velocityX;
-        centerX = min(screenWidth - squareSize, centerX);
-        centerX = max(0, centerX);
+    rotationAngle += rateOfRotation;
 
-        centerY += velocityY;
-        velocityY += gravity;
-        if(centerY < 0){
-          centerY = screenHeight;
-        }
-        // print("updating position to $centerY");
-      // velocity += gravity;
-      });
-    // }
+    velocityX = _x / _xMax * maxVelocityX;
+    centerX += velocityX;
+    centerX = min(screenWidth - squareSize, centerX);
+    centerX = max(0, centerX);
+
+    centerY += velocityY;
+    velocityY += gravity;
   }
 
   void tapFun() {
     print("Tapped");
-    // if (!_animationController.isAnimating) {
-      setState(() {
-        // Move the square up by a certain amount
-        // velocityX = _x/_xMax * maxVelocityX;
-        // velocityY = sqrt(maxVelocity;
-        velocityY = maxVelocity;
-      });
-      startAnimation();
-    // }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if(gameStart){
-      screenWidth = MediaQuery.of(context).size.width;
-      screenHeight = MediaQuery.of(context).size.height;
-      var padding = MediaQuery.of(context).padding;
-      var navbarHeight = MediaQuery.of(context).viewInsets.bottom;
-      
-      //actual screenHeight
-      screenHeight -= padding.top;
-
-      //square center
-      centerY = screenHeight/2;//- squareSize;
-      centerX = (screenWidth - squareSize)/2;
-      print("x: $centerX, y: $centerY");
-
-      // print(centerY);
-      print("build started");
-      gameStart = false;
-    }
-
-    return Transform.translate(
-              offset: Offset(centerX, centerY),
-              child: Transform.rotate(
-                angle: rotationAngle,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: tapFun,
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      // return Square();
-                      return Container(
-                        width: squareSize,
-                        height: squareSize,
-                        color: Colors.red,
-                        // decoration: const BoxDecoration(
-                        //   shape: BoxShape.circle,
-                        //   color: Colors.red,
-                        // ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            );
+    velocityY = maxVelocity;
   }
 }
 
 // typedef bool MyBoolCallback();
-class Obstacle extends StatefulWidget {
+class Obstacle {
   final double velocity;
   final double thickness;
   final double squareSize;
-  // bool dead = false;
-  Obstacle({super.key, required this.velocity, required this.thickness, required this.squareSize});
 
-  @override
-  State<Obstacle> createState() => _ObstacleState();
+  Obstacle({
+        required this.velocity,
+        required this.thickness,
+        required this.squareSize
+      })
+  {
+      // position = -(widget.thickness);
+      position = 0;
+      initHole();
+  }
 
-  // bool callGetter(bool Function() function){
-  //   return function();
-  // }
-  // bool getLifeStatus();
-}
-
-class _ObstacleState extends State<Obstacle> with SingleTickerProviderStateMixin{
   late double position;
   late double holeSize = 100;
-  late double holeTolerance = 30;     // distance from edge of screen, trying that hole isn't too close to edge
+  late double holeTolerance = 30; // distance from edge of screen, trying that hole isn't too close to edge
   late double holePosition;
-  // late bool dead = false;
-  late AnimationController _animationController;
-
-  // final MyBoolCallback getLife;
-
-  // bool widget.getLifeStatus(){
-  //   return dead;
-  // }
+  late bool dead = false;
 
   void updatePosition() {
-    setState((){
-      position += widget.velocity;
-    });
-  }
-
-  void initHole(){
-    assert (sqrt(2*widget.squareSize*widget.squareSize) + 5 < holeSize, ["Hole is too small for object"]);
-    Random randomGenerator = Random();
-    holePosition = randomGenerator.nextDouble() * (_SquareState.screenWidth - 2*holeTolerance - holeSize) + holeTolerance;
-    // holePosition = 100;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // position = -(widget.thickness);
-    position = 0;
-    initHole();
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(days: 1),
-    ); 
-    
-    _animationController.addListener(updatePosition);
-    _animationController.addListener(
-      () {
-        // JUST FOR TESTING ONCE GAME IS COMPLETED, TURN + TO -
-        if (position > _SquareState.screenHeight + 200) {
-          _animationController.stop();
-          // widget.dead = true;
-          print('obstacle ended');
-        }
-      },
-    );
-
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child){
-        return SizedBox(
-          width: double.infinity,
-          height: double.infinity,
-          child: Stack(
-            children: [
-              Positioned(
-                top: position,
-                left: 0,
-                child: Container(
-                  height: widget.thickness,
-                  width: holePosition,
-                  color: Colors.green,
-                ),
-              ),
-              Positioned(
-                top: position,
-                left: holePosition + holeSize,
-                child: Container(
-                  height: widget.thickness,
-                  width: _SquareState.screenWidth - holePosition - holeSize,
-                  color: Colors.green,
-                ),
-              )
-            ]
-          ),
-        );
+      if (position > Square.screenHeight + 200) {
+        dead = true;
+        print('obstacle stopped moving');
+        return;
       }
-    );
+      position += velocity;
+  }
+
+  void initHole() {
+    assert(sqrt(2 * squareSize * squareSize) + 5 < holeSize, ["Hole is too small for object"]);
+
+    Random randomGenerator = Random();
+    holePosition = randomGenerator.nextDouble() * (Square.screenWidth - 2 * holeTolerance - holeSize) + holeTolerance;
+    // holePosition = 100;
   }
 }
 
@@ -376,45 +190,184 @@ class GamePage extends StatefulWidget {
 
 class _GamePageState extends State<GamePage> {
   Queue<Obstacle> obstacles = Queue<Obstacle>();
-  Obstacle obs = Obstacle(velocity: 2, thickness: 20, squareSize: 50);
+  // Obstacle obs = Obstacle(velocity: 2, thickness: 20, squareSize: 50);
+  Square square = Square();
+  late Timer obstacleSpawner;
+  late Timer gameTimer;
 
   @override
   void initState() {
     super.initState();
+    reset();
     // Start adding obstacles after 1 second
-    Timer.periodic(const Duration(seconds: 2), (Timer timer) {
+  }
+
+  void reset(){
+    print("reset called");
+    setState(
+      (){
+      square.reset();
+      obstacles.clear();
+    });
+    notClickedYet = true;
+  }
+
+  bool notClickedYet = true;
+  int frameRate = 60;
+  void tapFun() {
+    square.tapFun();
+    if(notClickedYet){
+      notClickedYet = false;
+
+      obstacleSpawner = Timer.periodic(const Duration(seconds: 2), (Timer timer) {
       setState(() {
         obstacles.add(
           Obstacle(velocity: 2, thickness: 20, squareSize: 50),
         );
 
-        // if (obstacles.isNotEmpty && obstacles.first.dead){
-        //   obstacles.removeFirst();
-        // }
+        if (obstacles.isNotEmpty && obstacles.first.dead){
+          obstacles.removeFirst();
+          print("removed obstacle from queue");
+        }
+      });
+        print("new obstacle dropped");
+        print("queue length: ${obstacles.length}");
       });
 
-      // print(obs.)
-    });
+      gameTimer = Timer.periodic(
+        Duration(milliseconds: 1000~/frameRate),
+        (Timer timer) {
+          setState(() {
+            square.updatePosition();
+            for(var element in obstacles) {
+              element.updatePosition();
+            }
+
+            // checkCollision();
+
+            if(Square.gameOver == true) {
+              timer.cancel();
+              obstacleSpawner.cancel();
+              print("both timers cancelled");
+            }
+          });
+        },
+      );
+    }
+  }
+
+  // void checkCollision(){
+  //   for(var element in obstacles) {
+      
+  // }
+
+  @override
+  void dispose() {
+    Square.subscription.cancel();
+    obstacleSpawner.cancel();
+    gameTimer.cancel();
+    super.dispose();
+  }
+
+  @override
+  void setState(fn) {
+    if(mounted) {
+      super.setState(fn);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // appBar: AppBar(
-      //   toolbarHeight: 100,
-      //   title: const Text("Elevated Game"),
-      // ),
-      body: SizedBox(
+    // var navbarHeight = MediaQuery.of(context).viewInsets.bottom;
+    // print("Building again");
+    if (square.gameStart) {
+      Square.screenWidth = MediaQuery.of(context).size.width;
+      Square.screenHeight = MediaQuery.of(context).size.height;
+      print("screenWidth: ${Square.screenWidth}, screenHeight: ${Square.screenHeight}");
+      var padding = MediaQuery.of(context).padding;
+      //actual screenHeight
+      Square.screenHeight -= padding.top;
+
+      //square center
+      square.centerY = Square.screenHeight / 2; //- squareSize;
+      square.centerX = (Square.screenWidth - square.squareSize) / 2;
+      print("x: ${square.centerX}, y: ${square.centerY}");
+
+      // print(centerY);
+      print("build started");
+      square.gameStart = false;
+    }
+
+    return GestureDetector(
+      onTap: Square.gameOver ? reset : null,
+      child: Scaffold(
+          // appBar: AppBar(
+          //   toolbarHeight: 100,
+          //   title: const Text("Elevated Game"),
+          // ),
+        body: SizedBox(
         width: double.infinity,
         height: double.infinity,
         child: Stack(
-          // physics: const NeverScrollableScrollPhysics(),
-          children: [
-            Square(obstacles: obstacles),
-             ...obstacles.map((element) => element).toList(),
-          ]
-        ),
-      )
+            // physics: const NeverScrollableScrollPhysics(),
+            children: [
+              if(Square.gameOver)
+                      const Center(
+                        child: Text(
+                          "Game Over\nTap to restart",
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      ),
+            ...obstacles.map((element) {
+              return SizedBox(
+                  width: double.infinity,
+                  height: double.infinity,
+                  child: Stack(children: [
+                    Positioned(
+                      top: element.position,
+                      left: 0,
+                      child: Container(
+                        height: element.thickness,
+                        width: element.holePosition,
+                        color: Colors.green,
+                      ),
+                    ),
+                    Positioned(
+                      top: element.position,
+                      left: element.holePosition + element.holeSize,
+                      child: Container(
+                        height: element.thickness,
+                        width: Square.screenWidth - element.holePosition - element.holeSize,
+                        color: Colors.green,
+                      ),
+                    )
+                  ]),
+                );
+          }).toList(),
+              Transform.translate(
+                offset: Offset(square.centerX, square.centerY),
+                child: Transform.rotate(
+                  angle: square.rotationAngle,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: tapFun,
+                    child: Container(
+                      width: square.squareSize,
+                      height: square.squareSize,
+                      color: Colors.red,
+                      // decoration: const BoxDecoration(
+                      //   shape: BoxShape.circle,
+                      //   color: Colors.red,
+                      // ),
+                    ),
+                  ),
+                ),
+              )
+            ]),
+      )),
     );
   }
 }
