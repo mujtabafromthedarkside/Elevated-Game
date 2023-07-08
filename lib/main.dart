@@ -75,8 +75,10 @@ class Square {
   double velocityX = 0;
   double maxVelocityX = -0.4;
 
-  double centerX = 0; //square center x coordinate
-  double centerY = 0; //square center y coordinate
+  double topLeftX = 0; //square center x coordinate
+  double topLeftY = 0; //square center y coordinate
+  double centerX = 0;
+  double centerY = 0;
 
   double maxVelocity = -7;
   double velocityY = 0;
@@ -84,6 +86,7 @@ class Square {
 
   double rotationAngle = 0.0;
   double rateOfRotation = 0.05;
+  // double rateOfRotation = 0.00;
 
   static late double screenWidth = 400;
   static late double screenHeight = 1000;
@@ -101,6 +104,31 @@ class Square {
     reset();
   }
 
+  void updatePoints(){
+    centerX = topLeftX + squareSize / 2;
+    centerY = topLeftY + squareSize / 2;
+  }
+
+  List<double> findPoint(double startAngle){
+    const double pi = 3.141592654;
+    double tmp = startAngle;
+    while(startAngle > pi/4 || startAngle < -pi/4){
+      if (startAngle > pi/4){
+        startAngle -= pi/2;
+      } else if (startAngle < -pi/4){
+        startAngle += pi/2;
+      }
+    }
+
+    double length = (squareSize / 2 / cos(startAngle)).abs();
+    startAngle = tmp;
+
+    double rotatedPointX = centerX - length * cos(startAngle - rotationAngle);
+    double rotatedPointY = centerY + length * sin(startAngle - rotationAngle);
+
+    return [rotatedPointX, rotatedPointY];
+  }
+
   void reset(){
     gameOver = false;
     gameStart = true;
@@ -108,8 +136,9 @@ class Square {
     _x = 0.0; //accelerometer x value
     velocityX = 0;
 
-    centerX = 0; //square center x coordinate
-    centerY = 0; //square center y coordinate
+    topLeftX = 0; //square center x coordinate
+    topLeftY = 0; //square center y coordinate
+    updatePoints();
 
     velocityY = 0;
 
@@ -117,7 +146,7 @@ class Square {
   }
 
   void updatePosition() {
-    if (centerY + sqrt(2*(squareSize*squareSize)) < 0 || centerY - sqrt(2*(squareSize*squareSize)) > screenHeight) {
+    if (topLeftY + sqrt(2*(squareSize*squareSize)) < 0 || topLeftY - sqrt(2*(squareSize*squareSize)) > screenHeight) {
       print("Game over");
       gameOver = true;
       return;
@@ -126,12 +155,14 @@ class Square {
     rotationAngle += rateOfRotation;
 
     velocityX = _x / _xMax * maxVelocityX;
-    centerX += velocityX;
-    centerX = min(screenWidth - squareSize, centerX);
-    centerX = max(0, centerX);
+    topLeftX += velocityX;
+    topLeftX = min(screenWidth - squareSize, topLeftX);
+    topLeftX = max(0, topLeftX);
 
-    centerY += velocityY;
+    topLeftY += velocityY;
     velocityY += gravity;
+
+    updatePoints();
   }
 
   void tapFun() {
@@ -164,7 +195,9 @@ class Obstacle {
   late bool dead = false;
 
   void updatePosition() {
-      if (position > Square.screenHeight + 200) {
+      if(dead) {
+        return;
+      } else if (position > Square.screenHeight + 200) {
         dead = true;
         print('obstacle stopped moving');
         return;
@@ -192,6 +225,8 @@ class _GamePageState extends State<GamePage> {
   Queue<Obstacle> obstacles = Queue<Obstacle>();
   // Obstacle obs = Obstacle(velocity: 2, thickness: 20, squareSize: 50);
   Square square = Square();
+  final double pi = 3.141592654;
+  final int numberOfBoundaryPointsToCheck = 200;
   late Timer obstacleSpawner;
   late Timer gameTimer;
 
@@ -243,7 +278,7 @@ class _GamePageState extends State<GamePage> {
               element.updatePosition();
             }
 
-            // checkCollision();
+            checkCollision();
 
             if(Square.gameOver == true) {
               timer.cancel();
@@ -256,10 +291,29 @@ class _GamePageState extends State<GamePage> {
     }
   }
 
-  // void checkCollision(){
-  //   for(var element in obstacles) {
-      
-  // }
+  void checkCollision(){
+    for(var element in obstacles) {
+      for(double startAngle = 0; startAngle < 2*pi; startAngle += pi / numberOfBoundaryPointsToCheck){
+        List<double> point = square.findPoint(startAngle);
+        double x = point[0];
+        double y = point[1];
+
+        bool collided = true;
+        if (x > element.holePosition && x < element.holePosition + element.holeSize){
+          collided = false;
+        }
+
+        if(y < element.position || y > element.position + element.thickness){
+          collided = false;
+        }
+
+        if(collided){
+          Square.gameOver = true;
+          return;
+        }
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -289,11 +343,12 @@ class _GamePageState extends State<GamePage> {
       Square.screenHeight -= padding.top;
 
       //square center
-      square.centerY = Square.screenHeight / 2; //- squareSize;
-      square.centerX = (Square.screenWidth - square.squareSize) / 2;
-      print("x: ${square.centerX}, y: ${square.centerY}");
+      square.topLeftY = Square.screenHeight / 2; //- squareSize;
+      square.topLeftX = (Square.screenWidth - square.squareSize) / 2;
+      square.updatePoints();
+      print("x: ${square.topLeftX}, y: ${square.topLeftY}");
 
-      // print(centerY);
+      // print(topLeftY);
       print("build started");
       square.gameStart = false;
     }
@@ -311,16 +366,6 @@ class _GamePageState extends State<GamePage> {
         child: Stack(
             // physics: const NeverScrollableScrollPhysics(),
             children: [
-              if(Square.gameOver)
-                      const Center(
-                        child: Text(
-                          "Game Over\nTap to restart",
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      ),
             ...obstacles.map((element) {
               return SizedBox(
                   width: double.infinity,
@@ -348,7 +393,7 @@ class _GamePageState extends State<GamePage> {
                 );
           }).toList(),
               Transform.translate(
-                offset: Offset(square.centerX, square.centerY),
+                offset: Offset(square.topLeftX, square.topLeftY),
                 child: Transform.rotate(
                   angle: square.rotationAngle,
                   child: GestureDetector(
@@ -365,7 +410,17 @@ class _GamePageState extends State<GamePage> {
                     ),
                   ),
                 ),
-              )
+              ),
+            if(Square.gameOver)
+              const Center(
+                child: Text(
+                  "Game Over\nTap to restart",
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              ),
             ]),
       )),
     );
