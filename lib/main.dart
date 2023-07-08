@@ -1,9 +1,13 @@
 import 'dart:collection';
+import 'dart:io';
 import 'dart:math';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sensors/sensors.dart';
+import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,8 +16,13 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  Future hideSystemBars(){
+    return SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
   @override
   Widget build(BuildContext context) {
+    hideSystemBars();
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Elevated Game',
@@ -46,7 +55,8 @@ class HomePage extends StatelessWidget {
       children: [
         ElevatedButton(
             onPressed: () {
-              Navigator.of(context).push(
+              Navigator.push(
+                context,
                 MaterialPageRoute(
                   builder: (BuildContext context) => const GamePage(),
                 ),
@@ -64,6 +74,40 @@ class HomePage extends StatelessWidget {
             child: const Text("Accelerometer")),
       ],
     )));
+  }
+}
+
+class Storage {
+  Future<String> get _localPath async {
+    final directory = await getApplicationDocumentsDirectory();
+
+    return directory.path;
+  }
+
+  Future<File> get _localFile async {
+    final path = await _localPath;
+    return File('$path/value.txt');
+  }
+
+  Future<int> readValue() async {
+    try {
+      final file = await _localFile;
+
+      // Read the file
+      final contents = await file.readAsString();
+
+      return int.parse(contents);
+    } catch (e) {
+      // If encountering an error, return 0
+      return 0;
+    }
+  }
+
+  Future<File> writeValue(int value) async {
+    final file = await _localFile;
+
+    // Write the file
+    return file.writeAsString('$value');
   }
 }
 
@@ -121,6 +165,7 @@ class Square {
     }
 
     double length = (squareSize / 2 / cos(startAngle)).abs();
+    length -= 2;
     startAngle = tmp;
 
     double rotatedPointX = centerX - length * cos(startAngle - rotationAngle);
@@ -226,9 +271,13 @@ class _GamePageState extends State<GamePage> {
   Queue<Obstacle> obstacles = Queue<Obstacle>();
   // Obstacle obs = Obstacle(velocity: 2, thickness: 20, squareSize: 50);
   Square square = Square();
+  final Storage storage = Storage();
   final double pi = 3.141592654;
   final int numberOfBoundaryPointsToCheck = 200;
   int score = 0;
+  int highScore = 0;
+  bool pauseFlag = false;
+  bool exitFlag = false;
 
   late Timer obstacleSpawner;
   late Timer gameTimer;
@@ -237,8 +286,7 @@ class _GamePageState extends State<GamePage> {
   @override
   void initState() {
     super.initState();
-    reset();
-    // Start adding obstacles after 1 second
+    print("init state called");
   }
 
   void reset(){
@@ -253,10 +301,26 @@ class _GamePageState extends State<GamePage> {
       obstacles.add(
           Obstacle(velocity: 2, thickness: 20, squareSize: 50, position: 0),
         );
-
+      
+      readHighScore();
       score = 0;
     });
     notClickedYet = true;
+  }
+
+  void readHighScore(){
+    storage.readValue().then((int value) {
+        print("read high score: $value");
+        highScore = value;
+    });
+  }
+
+  void updateHighScore() {
+    highScore = max(score, highScore);
+
+    // Write the variable as a string to the file.
+    print('writing high score: $highScore');
+    storage.writeValue(highScore);
   }
 
   bool notClickedYet = true;
@@ -267,16 +331,20 @@ class _GamePageState extends State<GamePage> {
       notClickedYet = false;
 
       obstacleSpawner = Timer.periodic(const Duration(seconds: 2), (Timer timer) {
-      setState(() {
-        obstacles.add(
-          Obstacle(velocity: 2, thickness: 20, squareSize: 50, position: 0),
-        );
+        if(pauseFlag) return;
+        if(exitFlag) return;
 
-        if (obstacles.isNotEmpty && obstacles.first.dead){
-          obstacles.removeFirst();
-          print("removed obstacle from queue");
-        }
-      });
+        setState(() {
+          obstacles.add(
+            Obstacle(velocity: 2, thickness: 20, squareSize: 50, position: 0),
+          );
+
+          if (obstacles.isNotEmpty && obstacles.first.dead){
+            obstacles.removeFirst();
+            print("removed obstacle from queue");
+          }
+        });
+          
         print("new obstacle dropped");
         print("queue length: ${obstacles.length}");
       });
@@ -284,6 +352,9 @@ class _GamePageState extends State<GamePage> {
       gameTimer = Timer.periodic(
         Duration(milliseconds: 1000~/frameRate),
         (Timer timer) {
+          if(pauseFlag) return;
+          if(exitFlag) return;
+
           setState(() {
             square.updatePosition();
             for(var element in obstacles) {
@@ -305,8 +376,12 @@ class _GamePageState extends State<GamePage> {
       scoreTimer = Timer.periodic(
         const Duration(seconds: 1),
         (Timer timer) {
+          if(pauseFlag) return;
+          if(exitFlag) return;
+
           setState(() {
             score++;
+            updateHighScore();
           });
         },
       );
@@ -352,11 +427,33 @@ class _GamePageState extends State<GamePage> {
     }
   }
 
+  void changePause() {
+    if (Square.gameOver) return;
+    if (notClickedYet) return;
+    setState((){
+      pauseFlag = !pauseFlag;
+    });
+    print("pause state: $pauseFlag");
+  }
+
+  void changeExit(){
+    setState((){
+      exitFlag = !exitFlag;
+      if(exitFlag && !pauseFlag){
+        changePause();
+      }
+    });
+    
+    print("exit state: $exitFlag");
+  }
+
   @override
   Widget build(BuildContext context) {
     // var navbarHeight = MediaQuery.of(context).viewInsets.bottom;
     // print("Building again");
     if (square.gameStart) {
+      print("Starting game");
+      reset();
       Square.screenWidth = MediaQuery.of(context).size.width;
       Square.screenHeight = MediaQuery.of(context).size.height;
       print("screenWidth: ${Square.screenWidth}, screenHeight: ${Square.screenHeight}");
@@ -376,7 +473,7 @@ class _GamePageState extends State<GamePage> {
     }
 
     return GestureDetector(
-      onTap: Square.gameOver ? reset : tapFun,
+      onTap: Square.gameOver ? reset : pauseFlag? changePause : tapFun,
       child: Scaffold(
           // appBar: AppBar(
           //   toolbarHeight: 100,
@@ -414,18 +511,51 @@ class _GamePageState extends State<GamePage> {
                   ]),
                 );
           }).toList(),
-
-            Container(
-                alignment: Alignment.bottomRight,
-                // margin: const EdgeInsets.only(),
-                child: Text(
-                  'Score: $score',
-                  style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Transform.scale(
+                  scale: 2,
+                  child: IconButton(
+                    icon: const Icon(Icons.pause),
+                    onPressed: changePause,
                   ),
                 ),
-              ),
+                Transform.scale(
+                  scale: 2,
+                  child: IconButton(
+                    icon: const Icon(Icons.exit_to_app),
+                    onPressed: changeExit,
+                    // color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+            if(!notClickedYet)
+              Container(
+                  alignment: Alignment.bottomRight,
+                  margin: const EdgeInsets.only(bottom: 20, right: 10),
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: 'Score: $score\n',
+                        ),
+                        TextSpan(
+                          text: 'Max Score: $highScore',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                ),
               Transform.translate(
                 offset: Offset(square.topLeftX, square.topLeftY),
                 child: Transform.rotate(
@@ -441,17 +571,33 @@ class _GamePageState extends State<GamePage> {
                   ),
                 ),
               ),
-            if(Square.gameOver)
-              const Center(
-                child: Text(
-                  "Game Over\nTap to restart",
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
+
+            if(Square.gameOver && !exitFlag)
+               Center(
+                child: RichText(
+                  textAlign: TextAlign.center,
+                  text: const TextSpan(
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: 'GAME OVER!\n',
+                      ),
+                      TextSpan(
+                        text: 'Tap to Restart',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                )
+                ),
               ),
-            if(notClickedYet)
+            if(notClickedYet && !exitFlag)
               Container(
                 alignment: Alignment.center,
                 margin: const EdgeInsets.only(top: 100),
@@ -463,7 +609,47 @@ class _GamePageState extends State<GamePage> {
                   ),
                 ),
               ),
+            if(pauseFlag && !exitFlag)
+              Container(
+                  alignment: Alignment.center,
+                  margin: const EdgeInsets.only(top: 100),
+                  child: const Text(
+                    'Tap to Continue',
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            if(exitFlag)
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    alignment: Alignment.center,
+                    margin: const EdgeInsets.only(top: 100),
+                    child: const Text(
+                      'Exit?',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: (){
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('Yes'),
+                  ),
+                  ElevatedButton(
+                    onPressed: changeExit, 
+                    child: const Text('No'),
+                  )
+                ],
+              ),
             ]),
+
         ),
       ),
     );
