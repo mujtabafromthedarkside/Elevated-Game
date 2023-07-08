@@ -180,11 +180,12 @@ class Obstacle {
   Obstacle({
         required this.velocity,
         required this.thickness,
-        required this.squareSize
+        required this.squareSize,
+        required this.position,
       })
   {
       // position = -(widget.thickness);
-      position = 0;
+      // position = 0;
       initHole();
   }
 
@@ -227,8 +228,11 @@ class _GamePageState extends State<GamePage> {
   Square square = Square();
   final double pi = 3.141592654;
   final int numberOfBoundaryPointsToCheck = 200;
+  int score = 0;
+
   late Timer obstacleSpawner;
   late Timer gameTimer;
+  late Timer scoreTimer;
 
   @override
   void initState() {
@@ -243,6 +247,14 @@ class _GamePageState extends State<GamePage> {
       (){
       square.reset();
       obstacles.clear();
+      obstacles.add(
+          Obstacle(velocity: 2, thickness: 20, squareSize: 50, position: 240),
+        );
+      obstacles.add(
+          Obstacle(velocity: 2, thickness: 20, squareSize: 50, position: 0),
+        );
+
+      score = 0;
     });
     notClickedYet = true;
   }
@@ -257,7 +269,7 @@ class _GamePageState extends State<GamePage> {
       obstacleSpawner = Timer.periodic(const Duration(seconds: 2), (Timer timer) {
       setState(() {
         obstacles.add(
-          Obstacle(velocity: 2, thickness: 20, squareSize: 50),
+          Obstacle(velocity: 2, thickness: 20, squareSize: 50, position: 0),
         );
 
         if (obstacles.isNotEmpty && obstacles.first.dead){
@@ -283,8 +295,18 @@ class _GamePageState extends State<GamePage> {
             if(Square.gameOver == true) {
               timer.cancel();
               obstacleSpawner.cancel();
-              print("both timers cancelled");
+              scoreTimer.cancel();
+              print("all timers cancelled");
             }
+          });
+        },
+      );
+
+      scoreTimer = Timer.periodic(
+        const Duration(seconds: 1),
+        (Timer timer) {
+          setState(() {
+            score++;
           });
         },
       );
@@ -343,7 +365,7 @@ class _GamePageState extends State<GamePage> {
       Square.screenHeight -= padding.top;
 
       //square center
-      square.topLeftY = Square.screenHeight / 2; //- squareSize;
+      square.topLeftY = Square.screenHeight - 200; //- squareSize;
       square.topLeftX = (Square.screenWidth - square.squareSize) / 2;
       square.updatePoints();
       print("x: ${square.topLeftX}, y: ${square.topLeftY}");
@@ -354,7 +376,7 @@ class _GamePageState extends State<GamePage> {
     }
 
     return GestureDetector(
-      onTap: Square.gameOver ? reset : null,
+      onTap: Square.gameOver ? reset : tapFun,
       child: Scaffold(
           // appBar: AppBar(
           //   toolbarHeight: 100,
@@ -392,22 +414,30 @@ class _GamePageState extends State<GamePage> {
                   ]),
                 );
           }).toList(),
+
+            Container(
+                alignment: Alignment.bottomRight,
+                // margin: const EdgeInsets.only(),
+                child: Text(
+                  'Score: $score',
+                  style: const TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
               Transform.translate(
                 offset: Offset(square.topLeftX, square.topLeftY),
                 child: Transform.rotate(
                   angle: square.rotationAngle,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: tapFun,
-                    child: Container(
-                      width: square.squareSize,
-                      height: square.squareSize,
-                      color: Colors.red,
-                      // decoration: const BoxDecoration(
-                      //   shape: BoxShape.circle,
-                      //   color: Colors.red,
-                      // ),
-                    ),
+                  child: Container(
+                    width: square.squareSize,
+                    height: square.squareSize,
+                    color: Colors.red,
+                    // decoration: const BoxDecoration(
+                    //   shape: BoxShape.circle,
+                    //   color: Colors.red,
+                    // ),
                   ),
                 ),
               ),
@@ -421,8 +451,21 @@ class _GamePageState extends State<GamePage> {
                   ),
                 )
               ),
+            if(notClickedYet)
+              Container(
+                alignment: Alignment.center,
+                margin: const EdgeInsets.only(top: 100),
+                child: const Text(
+                  'Tap to jump',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ]),
-      )),
+        ),
+      ),
     );
   }
 }
