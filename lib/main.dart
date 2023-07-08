@@ -8,6 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:sensors/sensors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:audioplayers/audioplayers.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -49,31 +51,74 @@ class HomePage extends StatelessWidget {
         // appBar: AppBar(
         //   title: const Text("Elevated Game"),
         // ),
-        body: Center(
-            child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (BuildContext context) => const GamePage(),
+        body: SizedBox(
+          width: double.infinity,
+          height: double.infinity,
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+          const SizedBox(
+            width: double.infinity,
+            height: 200,
+            child:  Center(
+              child: Text(
+                "RISE UP",
+                style: TextStyle(
+                  fontSize: 50,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
-              );
-            },
-            child: const Text("Play")),
-        ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (BuildContext context) => const TestAccelerometer(),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 100,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (BuildContext context) => const GamePage(),
+                  ),
+                );
+              },
+              child: const Text(
+                "Play",
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.black,
                 ),
-              );
-            },
-            child: const Text("Accelerometer")),
-      ],
-    )));
+              )
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.only(top: 50),
+            child: RichText(
+              text: const TextSpan(
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                children: [
+                  TextSpan(
+                    text: 'How to Play:\n',
+                  ),
+                  TextSpan(
+                    text: '- Tap anywhere to jump\n- Do not let the square fall\n- Dodge the falling obstacles\n',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ));
   }
 }
 
@@ -283,10 +328,13 @@ class _GamePageState extends State<GamePage> {
   late Timer gameTimer;
   late Timer scoreTimer;
 
+  // late AudioCache _audioCache;
+
   @override
   void initState() {
     super.initState();
     print("init state called");
+    // _audioCache = AudioCache(prefix: "audio/", fixedPlayer: AudioPlayer()..setReleaseMode(ReleaseMode.STOP));
   }
 
   void reset(){
@@ -304,9 +352,12 @@ class _GamePageState extends State<GamePage> {
       
       readHighScore();
       score = 0;
+      obstacleSpawnerCounter = 0;
     });
+
     notClickedYet = true;
   }
+
 
   void readHighScore(){
     storage.readValue().then((int value) {
@@ -325,14 +376,21 @@ class _GamePageState extends State<GamePage> {
 
   bool notClickedYet = true;
   int frameRate = 60;
+  int spawnSeconds = 2;
+  int obstacleSpawnerCounter = 0;
   void tapFun() {
     square.tapFun();
+    // AudioPlayer().play(AssetSource('audio/playerPress4.mp3'));
+
     if(notClickedYet){
       notClickedYet = false;
 
-      obstacleSpawner = Timer.periodic(const Duration(seconds: 2), (Timer timer) {
+      obstacleSpawner = Timer.periodic(Duration(milliseconds: 1000~/frameRate), (Timer timer) {
         if(pauseFlag) return;
         if(exitFlag) return;
+        obstacleSpawnerCounter++;
+        if(obstacleSpawnerCounter < spawnSeconds * frameRate) return;
+        else obstacleSpawnerCounter = 0;
 
         setState(() {
           obstacles.add(
@@ -364,6 +422,7 @@ class _GamePageState extends State<GamePage> {
             checkCollision();
 
             if(Square.gameOver == true) {
+              // AudioPlayer().play(AssetSource('audio/end1.mp3'));
               timer.cancel();
               obstacleSpawner.cancel();
               scoreTimer.cancel();
@@ -654,60 +713,4 @@ class _GamePageState extends State<GamePage> {
       ),
     );
   }
-}
-
-class TestAccelerometer extends StatefulWidget {
-  const TestAccelerometer({super.key});
-
-  @override
-  State<TestAccelerometer> createState() => _TestAccelerometerState();
-}
-
-class _TestAccelerometerState extends State<TestAccelerometer> {
-  double _x = 0.0;
-  double _y = 0.0;
-  double _z = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    accelerometerEvents.listen((AccelerometerEvent event) {
-      // print(event);
-      setState(() {
-        _x = event.x;
-        _y = event.y;
-        _z = event.z;
-      });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Use the accelerometer values (_x, _y, _z) to determine the angle or tilt
-    // of the phone and update your game logic accordingly.
-    // For example, you can check the value of _x to determine if the phone is
-    // leaning to the right or left.
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Phone Angle Detection'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('X: $_x'),
-            Text('Y: $_y'),
-            Text('Z: $_z'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // @override
-  // void dispose() {
-  //   super.dispose();
-  //   // Remember to cancel the accelerometer listener when the widget is disposed
-  //   accelerometerEvents.cancel();
-  // }
 }
