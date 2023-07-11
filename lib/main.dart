@@ -106,7 +106,7 @@ class HomePage extends StatelessWidget {
                     text: 'How to Play:\n',
                   ),
                   TextSpan(
-                    text: '- Tap anywhere to jump\n- Do not let the square fall\n- Dodge the falling obstacles\n',
+                    text: '- Tap anywhere to jump\n- Tilt your phone to move sideways\n- Do not let the square fall\n- Dodge the falling obstacles\n',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
