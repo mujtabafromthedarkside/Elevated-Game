@@ -1,16 +1,10 @@
-# elevated
+# Elevated game
 
-A new Flutter project.
+## Idea
+A simple game designed in flutter. The player controls a rotating square object. Obstacles fall from above.
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Instructions
+- Tap anywhere to jump.
+- Tilt your phone to move sideways.
+- Do not let the square fall down.
+- Dodge the falling obstacles.
