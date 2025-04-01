@@ -5,11 +5,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:sensors/sensors.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:audioplayers/audioplayers.dart';
-
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +16,7 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  Future hideSystemBars(){
+  Future hideSystemBars() {
     return SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
@@ -52,15 +50,15 @@ class HomePage extends StatelessWidget {
         //   title: const Text("Elevated Game"),
         // ),
         body: SizedBox(
-          width: double.infinity,
-          height: double.infinity,
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+      width: double.infinity,
+      height: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
           const SizedBox(
             width: double.infinity,
             height: 200,
-            child:  Center(
+            child: Center(
               child: Text(
                 "RISE UP",
                 style: TextStyle(
@@ -75,22 +73,21 @@ class HomePage extends StatelessWidget {
             width: 100,
             height: 50,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (BuildContext context) => const GamePage(),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (BuildContext context) => const GamePage(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Play",
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.black,
                   ),
-                );
-              },
-              child: const Text(
-                "Play",
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.black,
-                ),
-              )
-            ),
+                )),
           ),
           Container(
             margin: const EdgeInsets.only(top: 50),
@@ -193,19 +190,19 @@ class Square {
     reset();
   }
 
-  void updatePoints(){
+  void updatePoints() {
     centerX = topLeftX + squareSize / 2;
     centerY = topLeftY + squareSize / 2;
   }
 
-  List<double> findPoint(double startAngle){
+  List<double> findPoint(double startAngle) {
     const double pi = 3.141592654;
     double tmp = startAngle;
-    while(startAngle > pi/4 || startAngle < -pi/4){
-      if (startAngle > pi/4){
-        startAngle -= pi/2;
-      } else if (startAngle < -pi/4){
-        startAngle += pi/2;
+    while (startAngle > pi / 4 || startAngle < -pi / 4) {
+      if (startAngle > pi / 4) {
+        startAngle -= pi / 2;
+      } else if (startAngle < -pi / 4) {
+        startAngle += pi / 2;
       }
     }
 
@@ -219,7 +216,7 @@ class Square {
     return [rotatedPointX, rotatedPointY];
   }
 
-  void reset(){
+  void reset() {
     gameOver = false;
     gameStart = true;
 
@@ -236,7 +233,7 @@ class Square {
   }
 
   void updatePosition() {
-    if (topLeftY + sqrt(2*(squareSize*squareSize)) < 0 || topLeftY - sqrt(2*(squareSize*squareSize)) > screenHeight) {
+    if (topLeftY + sqrt(2 * (squareSize * squareSize)) < 0 || topLeftY - sqrt(2 * (squareSize * squareSize)) > screenHeight) {
       print("Game over");
       gameOver = true;
       return;
@@ -268,15 +265,14 @@ class Obstacle {
   final double squareSize;
 
   Obstacle({
-        required this.velocity,
-        required this.thickness,
-        required this.squareSize,
-        required this.position,
-      })
-  {
-      // position = -(widget.thickness);
-      // position = 0;
-      initHole();
+    required this.velocity,
+    required this.thickness,
+    required this.squareSize,
+    required this.position,
+  }) {
+    // position = -(widget.thickness);
+    // position = 0;
+    initHole();
   }
 
   late double position;
@@ -286,14 +282,14 @@ class Obstacle {
   late bool dead = false;
 
   void updatePosition() {
-      if(dead) {
-        return;
-      } else if (position > Square.screenHeight + 200) {
-        dead = true;
-        print('obstacle stopped moving');
-        return;
-      }
-      position += velocity;
+    if (dead) {
+      return;
+    } else if (position > Square.screenHeight + 200) {
+      dead = true;
+      print('obstacle stopped moving');
+      return;
+    }
+    position += velocity;
   }
 
   void initHole() {
@@ -337,19 +333,18 @@ class _GamePageState extends State<GamePage> {
     // _audioCache = AudioCache(prefix: "audio/", fixedPlayer: AudioPlayer()..setReleaseMode(ReleaseMode.STOP));
   }
 
-  void reset(){
+  void reset() {
     print("reset called");
-    setState(
-      (){
+    setState(() {
       square.reset();
       obstacles.clear();
       obstacles.add(
-          Obstacle(velocity: 2, thickness: 20, squareSize: 50, position: 240),
-        );
+        Obstacle(velocity: 2, thickness: 20, squareSize: 50, position: 240),
+      );
       obstacles.add(
-          Obstacle(velocity: 2, thickness: 20, squareSize: 50, position: 0),
-        );
-      
+        Obstacle(velocity: 2, thickness: 20, squareSize: 50, position: 0),
+      );
+
       readHighScore();
       score = 0;
       obstacleSpawnerCounter = 0;
@@ -358,11 +353,10 @@ class _GamePageState extends State<GamePage> {
     notClickedYet = true;
   }
 
-
-  void readHighScore(){
+  void readHighScore() {
     storage.readValue().then((int value) {
-        print("read high score: $value");
-        highScore = value;
+      print("read high score: $value");
+      highScore = value;
     });
   }
 
@@ -382,46 +376,48 @@ class _GamePageState extends State<GamePage> {
     square.tapFun();
     // AudioPlayer().play(AssetSource('audio/playerPress4.mp3'));
 
-    if(notClickedYet){
+    if (notClickedYet) {
       notClickedYet = false;
 
-      obstacleSpawner = Timer.periodic(Duration(milliseconds: 1000~/frameRate), (Timer timer) {
-        if(pauseFlag) return;
-        if(exitFlag) return;
+      obstacleSpawner = Timer.periodic(Duration(milliseconds: 1000 ~/ frameRate), (Timer timer) {
+        if (pauseFlag) return;
+        if (exitFlag) return;
         obstacleSpawnerCounter++;
-        if(obstacleSpawnerCounter < spawnSeconds * frameRate) return;
-        else obstacleSpawnerCounter = 0;
+        if (obstacleSpawnerCounter < spawnSeconds * frameRate)
+          return;
+        else
+          obstacleSpawnerCounter = 0;
 
         setState(() {
           obstacles.add(
             Obstacle(velocity: 2, thickness: 20, squareSize: 50, position: 0),
           );
 
-          if (obstacles.isNotEmpty && obstacles.first.dead){
+          if (obstacles.isNotEmpty && obstacles.first.dead) {
             obstacles.removeFirst();
             print("removed obstacle from queue");
           }
         });
-          
+
         print("new obstacle dropped");
         print("queue length: ${obstacles.length}");
       });
 
       gameTimer = Timer.periodic(
-        Duration(milliseconds: 1000~/frameRate),
+        Duration(milliseconds: 1000 ~/ frameRate),
         (Timer timer) {
-          if(pauseFlag) return;
-          if(exitFlag) return;
+          if (pauseFlag) return;
+          if (exitFlag) return;
 
           setState(() {
             square.updatePosition();
-            for(var element in obstacles) {
+            for (var element in obstacles) {
               element.updatePosition();
             }
 
             checkCollision();
 
-            if(Square.gameOver == true) {
+            if (Square.gameOver == true) {
               // AudioPlayer().play(AssetSource('audio/end1.mp3'));
               timer.cancel();
               obstacleSpawner.cancel();
@@ -435,8 +431,8 @@ class _GamePageState extends State<GamePage> {
       scoreTimer = Timer.periodic(
         const Duration(seconds: 1),
         (Timer timer) {
-          if(pauseFlag) return;
-          if(exitFlag) return;
+          if (pauseFlag) return;
+          if (exitFlag) return;
 
           setState(() {
             score++;
@@ -447,23 +443,23 @@ class _GamePageState extends State<GamePage> {
     }
   }
 
-  void checkCollision(){
-    for(var element in obstacles) {
-      for(double startAngle = 0; startAngle < 2*pi; startAngle += pi / numberOfBoundaryPointsToCheck){
+  void checkCollision() {
+    for (var element in obstacles) {
+      for (double startAngle = 0; startAngle < 2 * pi; startAngle += pi / numberOfBoundaryPointsToCheck) {
         List<double> point = square.findPoint(startAngle);
         double x = point[0];
         double y = point[1];
 
         bool collided = true;
-        if (x > element.holePosition && x < element.holePosition + element.holeSize){
+        if (x > element.holePosition && x < element.holePosition + element.holeSize) {
           collided = false;
         }
 
-        if(y < element.position || y > element.position + element.thickness){
+        if (y < element.position || y > element.position + element.thickness) {
           collided = false;
         }
 
-        if(collided){
+        if (collided) {
           Square.gameOver = true;
           return;
         }
@@ -481,7 +477,7 @@ class _GamePageState extends State<GamePage> {
 
   @override
   void setState(fn) {
-    if(mounted) {
+    if (mounted) {
       super.setState(fn);
     }
   }
@@ -489,20 +485,20 @@ class _GamePageState extends State<GamePage> {
   void changePause() {
     if (Square.gameOver) return;
     if (notClickedYet) return;
-    setState((){
+    setState(() {
       pauseFlag = !pauseFlag;
     });
     print("pause state: $pauseFlag");
   }
 
-  void changeExit(){
-    setState((){
+  void changeExit() {
+    setState(() {
       exitFlag = !exitFlag;
-      if(exitFlag && !pauseFlag){
+      if (exitFlag && !pauseFlag) {
         changePause();
       }
     });
-    
+
     print("exit state: $exitFlag");
   }
 
@@ -532,183 +528,184 @@ class _GamePageState extends State<GamePage> {
     }
 
     return GestureDetector(
-      onTap: Square.gameOver ? reset : pauseFlag? changePause : tapFun,
+      onTap: Square.gameOver
+          ? reset
+          : pauseFlag
+              ? changePause
+              : tapFun,
       child: Scaffold(
-          // appBar: AppBar(
-          //   toolbarHeight: 100,
-          //   title: const Text("Elevated Game"),
-          // ),
+        // appBar: AppBar(
+        //   toolbarHeight: 100,
+        //   title: const Text("Elevated Game"),
+        // ),
         body: SizedBox(
-        width: double.infinity,
-        height: double.infinity,
-        child: Stack(
-            // physics: const NeverScrollableScrollPhysics(),
-            children: [
-            ...obstacles.map((element) {
-              return SizedBox(
-                  width: double.infinity,
-                  height: double.infinity,
-                  child: Stack(children: [
-                    Positioned(
-                      top: element.position,
-                      left: 0,
-                      child: Container(
-                        height: element.thickness,
-                        width: element.holePosition,
-                        color: Colors.green,
-                      ),
-                    ),
-                    Positioned(
-                      top: element.position,
-                      left: element.holePosition + element.holeSize,
-                      child: Container(
-                        height: element.thickness,
-                        width: Square.screenWidth - element.holePosition - element.holeSize,
-                        color: Colors.green,
-                      ),
-                    )
-                  ]),
-                );
-          }).toList(),
-            Row(
+          width: double.infinity,
+          height: double.infinity,
+          child: Stack(
+              // physics: const NeverScrollableScrollPhysics(),
               children: [
-                Transform.scale(
-                  scale: 2,
-                  child: IconButton(
-                    icon: const Icon(Icons.pause),
-                    onPressed: changePause,
-                  ),
-                ),
-                Transform.scale(
-                  scale: 2,
-                  child: IconButton(
-                    icon: const Icon(Icons.exit_to_app),
-                    onPressed: changeExit,
-                    // color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            if(!notClickedYet)
-              Container(
-                  alignment: Alignment.bottomRight,
-                  margin: const EdgeInsets.only(bottom: 20, right: 10),
-                  child: RichText(
-                    text: TextSpan(
-                      style: const TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'Score: $score\n',
+                ...obstacles.map((element) {
+                  return SizedBox(
+                    width: double.infinity,
+                    height: double.infinity,
+                    child: Stack(children: [
+                      Positioned(
+                        top: element.position,
+                        left: 0,
+                        child: Container(
+                          height: element.thickness,
+                          width: element.holePosition,
+                          color: Colors.green,
                         ),
-                        TextSpan(
-                          text: 'Max Score: $highScore',
+                      ),
+                      Positioned(
+                        top: element.position,
+                        left: element.holePosition + element.holeSize,
+                        child: Container(
+                          height: element.thickness,
+                          width: Square.screenWidth - element.holePosition - element.holeSize,
+                          color: Colors.green,
+                        ),
+                      )
+                    ]),
+                  );
+                }).toList(),
+                Row(
+                  children: [
+                    Transform.scale(
+                      scale: 2,
+                      child: IconButton(
+                        icon: const Icon(Icons.pause),
+                        onPressed: changePause,
+                      ),
+                    ),
+                    Transform.scale(
+                      scale: 2,
+                      child: IconButton(
+                        icon: const Icon(Icons.exit_to_app),
+                        onPressed: changeExit,
+                        // color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+                if (!notClickedYet)
+                  Container(
+                      alignment: Alignment.bottomRight,
+                      margin: const EdgeInsets.only(bottom: 20, right: 10),
+                      child: RichText(
+                        text: TextSpan(
                           style: const TextStyle(
-                            fontSize: 22,
+                            fontSize: 30,
                             fontWeight: FontWeight.bold,
+                            color: Colors.black,
                           ),
+                          children: [
+                            TextSpan(
+                              text: 'Score: $score\n',
+                            ),
+                            TextSpan(
+                              text: 'Max Score: $highScore',
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      )),
+                Transform.translate(
+                  offset: Offset(square.topLeftX, square.topLeftY),
+                  child: Transform.rotate(
+                    angle: square.rotationAngle,
+                    child: Container(
+                      width: square.squareSize,
+                      height: square.squareSize,
+                      color: Colors.red,
+                      // decoration: const BoxDecoration(
+                      //   shape: BoxShape.circle,
+                      //   color: Colors.red,
+                      // ),
                     ),
-                  )
-                ),
-              Transform.translate(
-                offset: Offset(square.topLeftX, square.topLeftY),
-                child: Transform.rotate(
-                  angle: square.rotationAngle,
-                  child: Container(
-                    width: square.squareSize,
-                    height: square.squareSize,
-                    color: Colors.red,
-                    // decoration: const BoxDecoration(
-                    //   shape: BoxShape.circle,
-                    //   color: Colors.red,
-                    // ),
                   ),
                 ),
-              ),
-
-            if(Square.gameOver && !exitFlag)
-               Center(
-                child: RichText(
-                  textAlign: TextAlign.center,
-                  text: const TextSpan(
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: 'GAME OVER!\n',
-                      ),
-                      TextSpan(
-                        text: 'Tap to Restart',
+                if (Square.gameOver && !exitFlag)
+                  Center(
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: const TextSpan(
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: 30,
                           fontWeight: FontWeight.bold,
+                          color: Colors.black,
                         ),
+                        children: [
+                          TextSpan(
+                            text: 'GAME OVER!\n',
+                          ),
+                          TextSpan(
+                            text: 'Tap to Restart',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            if(notClickedYet && !exitFlag)
-              Container(
-                alignment: Alignment.center,
-                margin: const EdgeInsets.only(top: 100),
-                child: const Text(
-                  'Tap to jump',
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            if(pauseFlag && !exitFlag)
-              Container(
-                  alignment: Alignment.center,
-                  margin: const EdgeInsets.only(top: 100),
-                  child: const Text(
-                    'Tap to Continue',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-            if(exitFlag)
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                if (notClickedYet && !exitFlag)
                   Container(
                     alignment: Alignment.center,
                     margin: const EdgeInsets.only(top: 100),
                     child: const Text(
-                      'Exit?',
+                      'Tap to jump',
                       style: TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  ElevatedButton(
-                    onPressed: (){
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text('Yes'),
+                if (pauseFlag && !exitFlag)
+                  Container(
+                    alignment: Alignment.center,
+                    margin: const EdgeInsets.only(top: 100),
+                    child: const Text(
+                      'Tap to Continue',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  ElevatedButton(
-                    onPressed: changeExit, 
-                    child: const Text('No'),
-                  )
-                ],
-              ),
-            ]),
-
+                if (exitFlag)
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        alignment: Alignment.center,
+                        margin: const EdgeInsets.only(top: 100),
+                        child: const Text(
+                          'Exit?',
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('Yes'),
+                      ),
+                      ElevatedButton(
+                        onPressed: changeExit,
+                        child: const Text('No'),
+                      )
+                    ],
+                  ),
+              ]),
         ),
       ),
     );
