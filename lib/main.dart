@@ -60,7 +60,7 @@ class HomePage extends StatelessWidget {
             height: 200,
             child: Center(
               child: Text(
-                "RISE UP",
+                "ELEVATED",
                 style: TextStyle(
                   fontSize: 50,
                   fontWeight: FontWeight.bold,
@@ -159,7 +159,7 @@ class Square {
   double _x = 0.0; //accelerometer x value
   double _xMax = 0.6; //this value results in maxVelocityX
   double velocityX = 0;
-  double maxVelocityX = -0.4;
+  double maxVelocityX = -0.7;
 
   double topLeftX = 0; //square center x coordinate
   double topLeftY = 0; //square center y coordinate
@@ -168,7 +168,7 @@ class Square {
 
   double maxVelocity = -7;
   double velocityY = 0;
-  double gravity = 0.25;
+  double gravity = 0.27;
 
   double rotationAngle = 0.0;
   double rateOfRotation = 0.05;
@@ -504,6 +504,16 @@ class _GamePageState extends State<GamePage> {
 
   @override
   Widget build(BuildContext context) {
+    ButtonStyle exitButtonStyle = ElevatedButton.styleFrom(
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+      padding: EdgeInsets.all(5),
+      textStyle: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+
     // var navbarHeight = MediaQuery.of(context).viewInsets.bottom;
     // print("Building again");
     if (square.gameStart) {
@@ -694,14 +704,16 @@ class _GamePageState extends State<GamePage> {
                         ),
                       ),
                       ElevatedButton(
+                        style: exitButtonStyle,
                         onPressed: () {
                           Navigator.of(context).pop();
                         },
-                        child: const Text('Yes'),
+                        child: Container(width: 60, child:  Center(child: Text('Yes'))),
                       ),
                       ElevatedButton(
+                        style: exitButtonStyle,
                         onPressed: changeExit,
-                        child: const Text('No'),
+                        child: Container(width: 60, child: Center(child: Text('No'))),
                       )
                     ],
                   ),
